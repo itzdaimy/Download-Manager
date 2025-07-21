@@ -174,65 +174,87 @@ async function handleUpdate(item) {
   await handleDownload(item);
 }
 
+async function startRepo(item) {
+  const repoFolder = path.join(__dirname, item.folder);
+  if (!fs.existsSync(repoFolder)) {
+    console.log(chalk.red(`${item.name} is not installed.`));
+    return;
+  }
+  const startFile = item.startFile || "index.js";
+  const startPath = path.join(repoFolder, startFile);
+  if (!fs.existsSync(startPath)) {
+    console.log(chalk.red(`Start file ${startFile} not found in ${item.name}.`));
+    return;
+  }
+  console.log(chalk.cyanBright(`🚀 Starting ${item.name}...`));
+  const child = exec(`node "${startPath}"`, { cwd: repoFolder, stdio: 'inherit' });
+  child.stdout?.pipe(process.stdout);
+  child.stderr?.pipe(process.stderr);
+  child.on("exit", (code) => {
+    console.log(chalk.gray(`${item.name} exited with code ${code}`));
+  });
+}
+
 async function mainMenu() {
   while (true) {
     logHeader();
-
     if (!fs.existsSync(availablePath)) {
       console.log(chalk.red("available.json not found"));
       return;
     }
-
     const data = JSON.parse(fs.readFileSync(availablePath, "utf8"));
-
     const { action } = await prompts({
       type: "select",
       name: "action",
       message: "What do you want to do?",
       choices: [
         { title: "Download", value: "Download" },
+        { title: "Start", value: "Start" },
         { title: "Uninstall", value: "Uninstall" },
         { title: "Update", value: "Update" },
         { title: "Exit", value: "Exit" }
       ]
     });
-
     if (action === "Exit") {
       console.log(chalk.gray("👋 Goodbye!"));
       break;
     }
-
-    const choices = data.map(item => {
+    let filteredData = data;
+    if (["Start", "Uninstall", "Update"].includes(action)) {
+      filteredData = data.filter(item => fs.existsSync(path.join(__dirname, item.folder)));
+      if (filteredData.length === 0) {
+        console.log(chalk.yellow(`\nNo installed repos available for ${action.toLowerCase()}.\n`));
+        await new Promise(res => setTimeout(res, 1500));
+        continue;
+      }
+    }
+    const choices = filteredData.map(item => {
       const installed = fs.existsSync(path.join(__dirname, item.folder));
       return {
         title: `${item.name}${installed ? chalk.green(" [Installed]") : ""}`,
         value: item
       };
     });
-
     const { selected } = await prompts({
       type: "select",
       name: "selected",
       message: `Select a repo to ${action.toLowerCase()}:`,
       choices
     });
-
     if (!selected) continue;
-
     if (action === "Download") await handleDownload(selected);
     if (action === "Uninstall") await handleUninstall(selected);
     if (action === "Update") await handleUpdate(selected);
-
-    await prompts({
+    if (action === "Start") await startRepo(selected);
+    const { cont } = await prompts({
       type: "toggle",
       name: "cont",
       message: "Return to menu?",
       active: "Yes",
       inactive: "No",
       initial: true
-    }).then(res => {
-      if (!res.cont) process.exit(0);
     });
+    if (!cont) process.exit(0);
   }
 }
 
