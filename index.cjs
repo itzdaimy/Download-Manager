@@ -8,7 +8,7 @@ const prompts = require("prompts");
 const { exec } = require("child_process");
 const crypto = require("crypto");
 
-const SELF_REPO = "https://github.com/itzdaimy/Download-Manager/main";
+const SELF_REPO = "https://raw.githubusercontent.com/itzdaimy/Download-Manager/refs/heads/main";
 const FILES_TO_CHECK = ["index.js", "available.json"];
 
 async function start() {
