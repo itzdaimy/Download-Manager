@@ -44,8 +44,8 @@ async function selfUpdate() {
     ]);
 
     if (local !== remote && remote) {
-      const res = await axios.get(remoteURL);
-      fs.writeFileSync(localPath, res.data);
+      const res = await axios.get(remoteURL, { responseType: "arraybuffer" });
+      fs.writeFileSync(localPath, Buffer.from(res.data));
       console.log(`✅ Updated ${file}`);
       updated = true;
     }
