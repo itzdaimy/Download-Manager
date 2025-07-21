@@ -11,6 +11,11 @@ const crypto = require("crypto");
 const SELF_REPO = "https://github.com/itzdaimy/Download-Manager/main";
 const FILES_TO_CHECK = ["index.js", "available.json"];
 
+async function start() {
+  await selfUpdate()
+  await mainMenu()
+}
+
 async function fileHash(filePath) {
   if (!fs.existsSync(filePath)) return "";
   const content = fs.readFileSync(filePath);
@@ -56,8 +61,6 @@ async function selfUpdate() {
     }, 1000);
   }
 }
-
-await selfUpdate();
 
 const availablePath = path.join(__dirname, "available.json");
 
@@ -233,4 +236,4 @@ async function mainMenu() {
   }
 }
 
-mainMenu();
+start();
