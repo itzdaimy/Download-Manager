@@ -5,7 +5,7 @@ const chalk = require("chalk");
 const gradient = require("gradient-string");
 const cliProgress = require("cli-progress");
 const prompts = require("prompts");
-const { exec } = require("child_process");
+const { exec, spawn } = require("child_process");
 const crypto = require("crypto");
 
 const SELF_REPO = "https://raw.githubusercontent.com/itzdaimy/Download-Manager/refs/heads/main";
@@ -54,9 +54,7 @@ async function selfUpdate() {
   if (updated) {
     console.log("\n🔁 Restarting to apply updates...");
     setTimeout(() => {
-      require("child_process").spawn("node", [__filename], {
-        stdio: "inherit"
-      });
+      spawn("node", [__filename], { stdio: "inherit" });
       process.exit(0);
     }, 1000);
   }
@@ -150,6 +148,18 @@ async function handleDownload(item) {
   }
 }
 
+async function removeWithRetries(folder, retries = 5, delayMs = 500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await fs.remove(folder);
+      return;
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await new Promise(res => setTimeout(res, delayMs));
+    }
+  }
+}
+
 async function handleUninstall(item) {
   const fullPath = path.join(__dirname, item.folder);
   if (fs.existsSync(fullPath)) {
@@ -160,8 +170,12 @@ async function handleUninstall(item) {
       initial: true
     });
     if (confirm) {
-      await fs.remove(fullPath);
-      console.log(chalk.redBright(`✘ Uninstalled ${item.name}`));
+      try {
+        await removeWithRetries(fullPath);
+        console.log(chalk.redBright(`✘ Uninstalled ${item.name}`));
+      } catch (err) {
+        console.log(chalk.red(`Failed to uninstall ${item.name}: ${err.message}`));
+      }
     }
   } else {
     console.log(chalk.gray("Nothing to uninstall."));
@@ -186,13 +200,9 @@ async function startRepo(item) {
     console.log(chalk.red(`Start file ${startFile} not found in ${item.name}.`));
     return;
   }
-  console.log(chalk.cyanBright(`🚀 Starting ${item.name}...`));
-  const child = exec(`node "${startPath}"`, { cwd: repoFolder, stdio: 'inherit' });
-  child.stdout?.pipe(process.stdout);
-  child.stderr?.pipe(process.stderr);
-  child.on("exit", (code) => {
-    console.log(chalk.gray(`${item.name} exited with code ${code}`));
-  });
+  console.log(chalk.cyanBright(`🚀 Launching new terminal for ${item.name}...`));
+  const cmd = `start cmd /k node "${startPath}"`;
+  exec(cmd, { cwd: repoFolder });
 }
 
 async function mainMenu() {
