@@ -4,11 +4,5 @@
     "repo": "itzdaimy/RugPlay-Automation",
     "branch": "main",
     "folder": "downloads/RugPlay-Automation"
-  },
-  {
-    "name": ".DB to .JSON",
-    "repo": "itzdaimy/DB-to-JSON",
-    "branch": "main",
-    "folder": "downloads/DB-to-JSON"
   }
 ]
