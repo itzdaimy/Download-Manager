@@ -8,56 +8,8 @@ const prompts = require("prompts");
 const { exec, spawn } = require("child_process");
 const crypto = require("crypto");
 
-const SELF_REPO = "https://raw.githubusercontent.com/itzdaimy/Download-Manager/refs/heads/main";
-const FILES_TO_CHECK = ["index.js", "available.json"];
-
 async function start() {
-  await selfUpdate()
   await mainMenu()
-}
-
-async function fileHash(filePath) {
-  if (!fs.existsSync(filePath)) return "";
-  const content = fs.readFileSync(filePath);
-  return crypto.createHash("sha256").update(content).digest("hex");
-}
-
-async function urlHash(url) {
-  try {
-    const res = await axios.get(url, { responseType: "arraybuffer" });
-    return crypto.createHash("sha256").update(res.data).digest("hex");
-  } catch {
-    return "";
-  }
-}
-
-async function selfUpdate() {
-  let updated = false;
-
-  for (const file of FILES_TO_CHECK) {
-    const localPath = path.join(__dirname, file);
-    const remoteURL = `${SELF_REPO}/${file}`;
-
-    const [local, remote] = await Promise.all([
-      fileHash(localPath),
-      urlHash(remoteURL)
-    ]);
-
-    if (local !== remote && remote) {
-      const res = await axios.get(remoteURL, { responseType: "arraybuffer" });
-      fs.writeFileSync(localPath, Buffer.from(res.data));
-      console.log(`✅ Updated ${file}`);
-      updated = true;
-    }
-  }
-
-  if (updated) {
-    console.log("\n🔁 Restarting to apply updates...");
-    setTimeout(() => {
-      spawn("node", [__filename], { stdio: "inherit" });
-      process.exit(0);
-    }, 1000);
-  }
 }
 
 const availablePath = path.join(__dirname, "available.json");
